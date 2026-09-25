@@ -228,3 +228,17 @@ input:focus, textarea:focus, select:focus { border-color: #9f8c15; box-shadow: 0
   .team-row { grid-template-columns: 1.2fr 1fr .8fr; }
   .team-row > :nth-child(3) { display: none; }
 }
+
+/* V2 Firebase states */
+.loading-shell, .access-denied { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 18px; background: #111; color: white; text-align: center; padding: 32px; }
+.loading-shell .brand-mark, .access-denied .brand-mark { margin: 0 0 10px; }
+.loading-shell strong { font-size: 13px; color: #d4d4d4; }
+.access-denied h1 { margin: 0; font-size: 34px; }
+.access-denied p { max-width: 430px; margin: 0; color: #bdbdbd; line-height: 1.6; }
+.primary-link { background: var(--yellow); color: #111; font-weight: 900; padding: 12px 16px; border-radius: 10px; font-size: 11px; }
+.error-banner { border: 1px solid #efb4b4; background: #fff0f0; color: #8b2020; border-radius: 10px; padding: 11px 13px; font-size: 10px; line-height: 1.5; }
+.floating-error { position: absolute; z-index: 10; top: 16px; left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 32px)); }
+.public-card { position: relative; }
+.panel-error { position: absolute; z-index: 5; top: 76px; left: 50%; transform: translateX(-50%); width: min(520px, calc(100% - 28px)); }
+.agent-conversation { position: relative; }
+button:disabled, input:disabled, textarea:disabled, select:disabled { cursor: not-allowed; opacity: .55; }

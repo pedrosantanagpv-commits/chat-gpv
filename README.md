@@ -1,54 +1,83 @@
-# Chat GPV — V1 demonstrativa
+# Chat GPV — V2 Firebase
 
-Primeira versão navegável da Central Digital de Atendimento GPV.
+A V2 substitui os dados simulados da V1 por Firebase Authentication + Cloud Firestore.
 
-## O que já existe
+## O que já funciona
 
-- `/` — jornada pública do associado: identificação, escolha do setor e chat demonstrativo.
-- `/equipe` — login demonstrativo e painel interno com fila, atendimento, transferência, mensagens e encerramento.
-- `/admin` — visão administrativa com indicadores e equipe simulados.
-- Layout responsivo com identidade amarela, preta e branca.
-- Dados 100% simulados/local state. **Não usar dados reais nesta versão.**
+- atendimento criado pelo associado;
+- sessão anônima do associado;
+- fila em tempo real;
+- login real da equipe por e-mail/senha;
+- perfil da equipe em `usuarios/{uid}`;
+- atendente assume atendimento com transação;
+- conversa em tempo real;
+- transferência de setor;
+- finalização;
+- painel administrativo com dados do Firestore;
+- regras de segurança incluídas em `firestore.rules`.
 
-## Rodar localmente
+## 1. Variáveis de ambiente
 
-```bash
-npm install
-npm run dev
-```
+O projeto espera estas variáveis, já configuráveis na Vercel:
 
-Abra `http://localhost:3000`.
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-## Publicar
+## 2. Authentication
 
-1. Crie um repositório vazio no GitHub.
-2. Envie todos os arquivos desta pasta para o repositório.
-3. Importe o repositório na Vercel.
-4. Framework preset: Next.js (normalmente detectado automaticamente).
-5. Não é necessário configurar variáveis de ambiente nesta V1.
+No Firebase Console, habilite:
 
-## Próxima etapa — Firebase
+- Email/Password
+- Anonymous (Anônimo)
 
-A próxima versão deverá substituir os dados simulados por:
+Email/Password é usado pela equipe. Anonymous cria uma identidade temporária para cada visitante do Chat GPV sem expor o banco publicamente.
 
-- Firebase Authentication: login da equipe.
-- Firestore: atendimentos, mensagens, setores, usuários e protocolos.
-- Realtime Database: presença/digitando, se necessário.
-- Cloud Storage: anexos, com limites e regras de segurança.
-- App Check / proteção antiabuso.
-- Regras de acesso por perfil e setor.
+## 3. Publicar as regras do Firestore
 
-### Coleções previstas
+Firebase Console > Firestore Database > Regras.
 
-```text
-users
-sectors
-conversations
-  └── {conversationId}
-      └── messages
-protocols / metadados quando necessário
-```
+Substitua o conteúdo atual pelo conteúdo de `firestore.rules` e clique em Publicar.
 
-## Importante
+## 4. Criar o primeiro administrador
 
-Esta é uma versão de interface e fluxo. O botão de anexos, login, indicadores e mensagens não têm backend real ainda. Não coloque CPF, telefone, documentos ou dados de associados reais até conectarmos autenticação e regras de segurança.
+### Authentication
+
+Firebase Console > Authentication > Users > Add user.
+
+Crie o usuário interno com e-mail e senha e copie o UID gerado.
+
+### Firestore
+
+Crie a coleção `usuarios` e use o UID do Authentication como ID do documento.
+
+Campos:
+
+| Campo | Tipo | Exemplo |
+|---|---|---|
+| `nome` | string | `Pedro` |
+| `email` | string | `email@gpv.com.br` |
+| `role` | string | `admin` |
+| `setor` | string | `Todos` |
+| `ativo` | boolean | `true` |
+
+Os perfis aceitos são `admin`, `supervisor` e `agent`.
+
+Para um atendente comum, o campo `setor` precisa ser exatamente um dos nomes usados no Chat, por exemplo `Financeiro`, `Eventos`, `Rastreamento`, `Cadastro`, `Assistência 24h` ou `Outros assuntos`.
+
+## 5. Rotas
+
+- `/` — associado
+- `/equipe` — equipe interna
+- `/admin` — administração (somente `role: admin`)
+
+## 6. Atualizar o GitHub / Vercel
+
+Substitua os arquivos da V1 pelos arquivos desta V2 no repositório e faça commit/push. A Vercel fará o novo deploy automaticamente.
+
+## Importante antes de divulgar publicamente
+
+Esta V2 é para validação funcional. Antes de colocar o balão no site oficial, ainda vamos configurar App Check, proteção antiabuso/rate limit, política de retenção, logs/auditoria e só depois anexos/Storage.

@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profileExists() {
+      return signedIn() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function activeStaff() {
+      return profileExists()
+        && profile().ativo == true
+        && profile().role in ['agent', 'supervisor', 'admin'];
+    }
+
+    function isAdmin() {
+      return activeStaff() && profile().role == 'admin';
+    }
+
+    function isManager() {
+      return activeStaff() && profile().role in ['supervisor', 'admin'];
+    }
+
+    function agentCanAccess(ticket) {
+      return activeStaff() && (
+        isManager()
+        || ticket.setor == profile().setor
+        || ticket.atendenteUid == request.auth.uid
+      );
+    }
+
+    function isCustomer(ticket) {
+      return signedIn() && ticket.clienteUid == request.auth.uid;
+    }
+
+    match /usuarios/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /atendimentos/{ticketId} {
+      allow create: if signedIn()
+        && request.resource.data.clienteUid == request.auth.uid
+        && request.resource.data.status == 'aguardando'
+        && request.resource.data.atendenteUid == null
+        && request.resource.data.atendenteNome == null;
+
+      allow read: if isCustomer(resource.data) || agentCanAccess(resource.data);
+
+      allow update: if agentCanAccess(resource.data)
+        || (
+          isCustomer(resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['ultimaMensagem', 'ultimaMensagemEm', 'atualizadoEm'])
+          && request.resource.data.clienteUid == resource.data.clienteUid
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.setor == resource.data.setor
+          && request.resource.data.atendenteUid == resource.data.atendenteUid
+        );
+
+      allow delete: if isAdmin();
+
+      match /mensagens/{messageId} {
+        function ticket() {
+          return get(/databases/$(database)/documents/atendimentos/$(ticketId)).data;
+        }
+
+        allow read: if isCustomer(ticket()) || agentCanAccess(ticket());
+
+        allow create: if (
+          isCustomer(ticket())
+          && request.resource.data.remetenteUid == request.auth.uid
+          && request.resource.data.remetenteTipo == 'cliente'
+          && request.resource.data.tipo == 'texto'
+        ) || agentCanAccess(ticket());
+
+        allow update, delete: if false;
+      }
+    }
+  }
+}
