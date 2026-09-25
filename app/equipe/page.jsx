@@ -32,7 +32,7 @@ export default function TeamPanel() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const bottomRef = useRef(null);
+  const messageListRef = useRef(null);
 
   useEffect(() => onAuthStateChanged(auth, async (current) => {
     setAuthReady(false);
@@ -96,7 +96,18 @@ export default function TeamPanel() {
     }, (err) => setError(readableError(err)));
   }, [selected?.id]);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages.length]);
+  useEffect(() => {
+    const container = messageListRef.current;
+    if (!container) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        container.scrollTop = container.scrollHeight;
+      } catch (err) {
+        console.warn('Chat GPV: não foi possível ajustar o scroll.', err);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages.length]);
 
   const filtered = useMemo(() => {
     if (filter === 'aguardando') return tickets.filter((ticket) => ticket.status === 'aguardando');
@@ -239,7 +250,7 @@ export default function TeamPanel() {
               {selected.status === 'em_atendimento' && <button className="outline-small" disabled={busy} onClick={finishTicket}>Finalizar</button>}
             </div>
           </header>
-          <div className="agent-messages"><div className="date-divider"><span>Conversa</span></div>{messages.length === 0 && <div className="system-message">Ainda não há mensagens neste atendimento.</div>}{messages.map((item) => <AgentMessage key={item.id} item={item} currentUid={user.uid} />)}<div ref={bottomRef} /></div>
+          <div className="agent-messages" ref={messageListRef}><div className="date-divider"><span>Conversa</span></div>{messages.length === 0 && <div className="system-message">Ainda não há mensagens neste atendimento.</div>}{messages.map((item) => <AgentMessage key={item.id} item={item} currentUid={user.uid} />)}</div>
           <form className="agent-composer" onSubmit={sendMessage}><button type="button" className="attach-button" disabled title="Anexos entram na próxima versão">＋</button><textarea value={message} onChange={(e) => setMessage(e.target.value)} disabled={selected.status !== 'em_atendimento' || busy} placeholder={selected.status === 'em_atendimento' ? 'Digite sua mensagem...' : 'Assuma o atendimento para responder'} /><button disabled={selected.status !== 'em_atendimento' || busy || !message.trim()} className="send-button" type="submit">Enviar</button></form>
         </> : <div className="empty-center">Selecione um atendimento</div>}
       </section>

@@ -29,7 +29,7 @@ export default function PublicChat() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const bottomRef = useRef(null);
+  const messageListRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,7 +98,16 @@ export default function PublicChat() {
   }, [ticket?.id, customerUid]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messageListRef.current;
+    if (!container) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        container.scrollTop = container.scrollHeight;
+      } catch (err) {
+        console.warn('Chat GPV: não foi possível ajustar o scroll.', err);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [messages.length]);
 
   function identify(e) {
@@ -247,11 +256,10 @@ export default function PublicChat() {
                 <div><span className="queue-pill">{ticket.setor || sector?.name}</span><h3>{ticket.status === 'finalizado' ? 'Atendimento finalizado' : 'Atendimento em andamento'}</h3><small>Protocolo {ticket.protocolo}</small></div>
                 {ticket.status === 'finalizado' && <button className="outline-button" onClick={newAttendance}>Novo atendimento</button>}
               </header>
-              <div className="message-list">
+              <div className="message-list" ref={messageListRef}>
                 <div className="queue-notice"><span className="status-dot" /> {ticket.status === 'aguardando' ? 'Você está na fila de atendimento.' : ticket.atendenteNome ? `Atendimento com ${ticket.atendenteNome}.` : 'Você está conectado ao Chat GPV.'}</div>
                 {messages.length === 0 && <div className="system-message">Envie uma mensagem explicando como podemos ajudar.</div>}
                 {messages.map((item) => <Message key={item.id} item={item} customerUid={customerUid} />)}
-                <div ref={bottomRef} />
               </div>
               <form className="composer" onSubmit={sendMessage}>
                 <button type="button" className="attach-button" title="Anexos entram na próxima versão" disabled>＋</button>

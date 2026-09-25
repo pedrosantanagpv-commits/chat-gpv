@@ -81,3 +81,10 @@ Substitua os arquivos da V1 pelos arquivos desta V2 no repositório e faça comm
 ## Importante antes de divulgar publicamente
 
 Esta V2 é para validação funcional. Antes de colocar o balão no site oficial, ainda vamos configurar App Check, proteção antiabuso/rate limit, política de retenção, logs/auditoria e só depois anexos/Storage.
+
+## Hotfix 0.2.1
+
+- Remove `scrollIntoView({ behavior: 'smooth' })` executado a cada nova mensagem.
+- Auto-scroll agora usa o próprio contêiner (`scrollTop = scrollHeight`) dentro de `requestAnimationFrame`.
+- Adicionadas barreiras `error.jsx` e `global-error.jsx` para impedir que uma exceção de renderização caia diretamente na tela genérica do Next.js.
+- Nenhuma alteração nas coleções, regras do Firestore ou variáveis de ambiente.
